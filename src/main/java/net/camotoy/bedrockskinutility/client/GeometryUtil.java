@@ -15,7 +15,6 @@ import org.joml.Vector3f;
 import java.util.*;
 
 public class GeometryUtil {
-    private static final List<String> LEG_RELATED = List.of("leftleg", "rightleg");
 
     public static BedrockPlayerEntityModel<AbstractClientPlayer> bedrockGeoToJava(BedrockGeometryModel geometry) {
         // There are some times when the skin image file is larger than the geometry UV points.
@@ -38,13 +37,7 @@ public class GeometryUtil {
             ((BedrockModelPart)((Object)part)).bedrockskinutility$setNeededOffset(neededOffset);
             ((BedrockModelPart)((Object)part)).bedrockskinutility$setAngles(new Vector3f(bone.getRotation().getX() , bone.getRotation().getY(), bone.getRotation().getZ()));
 
-            boolean leg = LEG_RELATED.contains(bone.getName().toLowerCase(Locale.ROOT));
-            if (leg) {
-                part.setPos(0, bone.getPivot().getY(), 0);
-                part.setInitialPose(part.storePose());
-            } else {
-                ((BedrockModelPart)((Object)part)).bedrockskinutility$setPivot(new Vector3f(bone.getPivot().getX(), -bone.getPivot().getY() + 24.016F, bone.getPivot().getZ()));
-            }
+            ((BedrockModelPart)((Object)part)).bedrockskinutility$setPivot(new Vector3f(-bone.getPivot().getX(), -bone.getPivot().getY() + 24.016F, bone.getPivot().getZ()));
 
             // Java don't allow individual cubes to have their own rotation therefore, we have to separate each cube into ModelPart to be able to rotate.
             for (final Cube cube : bone.getCubes().values()) {
@@ -57,12 +50,14 @@ public class GeometryUtil {
 
                 final Set<Direction> set = new HashSet<>();
                 for (final Direction direction : Direction.values()) {
-                    if (uvMap.getMap().containsKey(org.cube.converter.util.element.Direction.values()[direction.ordinal()])) {
+                    if (uvMap.getUvMap().containsKey(org.cube.converter.util.element.Direction.values()[direction.ordinal()])) {
                         set.add(direction);
                     }
                 }
 
-                final ModelPart.Cube cuboid = new ModelPart.Cube(0, 0, pos.getX(), leg ? pos.getY() : -(pos.getY() - 24.016F + sizeY), pos.getZ(), sizeX, sizeY, sizeZ, inflate, inflate, inflate, cube.isMirror(), uvWidth, uvHeight, set);
+                // Use Java-equivalent position for vertical placement to avoid legs sinking into ground
+                final float placeY = -(pos.getY() - 24.016F + sizeY);
+                final ModelPart.Cube cuboid = new ModelPart.Cube(0, 0, pos.getX(), placeY, pos.getZ(), sizeX, sizeY, sizeZ, inflate, inflate, inflate, cube.isMirror(), uvWidth, uvHeight, set);
                 applyUVMap(cuboid, set, uvMap, uvWidth, uvHeight, cube.getInflate(), cube.isMirror());
 
                 final ModelPart cubePart = new ModelPart(List.of(cuboid), Map.of());
@@ -133,7 +128,7 @@ public class GeometryUtil {
         g += inflate;
         h += inflate;
 
-        if (mirror) {
+        if (!mirror) {
             float i = f;
             f = x;
             x = i;
@@ -152,33 +147,33 @@ public class GeometryUtil {
         int s = 0;
 
         if (set.contains(Direction.DOWN)) {
-            final Float[] uv = map.getMap().get(org.cube.converter.util.element.Direction.DOWN);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex5, vertex, vertex2}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.DOWN);
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.DOWN);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex7, vertex8, vertex4, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.DOWN);
         }
 
         if (set.contains(Direction.UP)) {
-            final Float[] uv = map.getMap().get(org.cube.converter.util.element.Direction.UP);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex3, vertex4, vertex8, vertex7}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.UP);
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.UP);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex2, vertex, vertex5}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.UP);
         }
 
         if (set.contains(Direction.WEST)) {
-            final Float[] uv = map.getMap().get(org.cube.converter.util.element.Direction.WEST);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex, vertex5, vertex8, vertex4}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.WEST);
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.WEST);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex, vertex4, vertex8}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.WEST);
         }
 
         if (set.contains(Direction.NORTH)) {
-            final Float[] uv = map.getMap().get(org.cube.converter.util.element.Direction.NORTH);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex2, vertex, vertex4, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.NORTH);
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.NORTH);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex, vertex2, vertex3, vertex4}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.NORTH);
         }
 
         if (set.contains(Direction.EAST)) {
-            final Float[] uv = map.getMap().get(org.cube.converter.util.element.Direction.EAST);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex2, vertex3, vertex7}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.EAST);
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.EAST);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex2, vertex6, vertex7, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.EAST);
         }
 
         if (set.contains(Direction.SOUTH)) {
-            final Float[] uv = map.getMap().get(org.cube.converter.util.element.Direction.SOUTH);
-            sides[s] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex6, vertex7, vertex8}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.SOUTH);
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.SOUTH);
+            sides[s] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex5, vertex8, vertex7}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.SOUTH);
         }
     }
 }

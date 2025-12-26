@@ -11,16 +11,22 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
+configurations {
+    shade
+}
+
 repositories {
     maven {
         name = "Jitpack"
         url = "https://jitpack.io"
 
         content {
-            includeGroup "com.github.Oryxel"
+            includeGroup "com.github.oryxel1"
         }
     }
 }
+
+def cubeConverterDependency = "com.github.oryxel1:CubeConverter:1c0ad71"
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -29,13 +35,23 @@ dependencies {
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    implementation ("com.github.Oryxel:CubeConverter:916cadb12a") {
+    implementation (cubeConverterDependency) {
+        transitive = false
+    }
+
+    shade (cubeConverterDependency) {
         transitive = false
     }
 }
 
 shadowJar {
-    relocate 'org.oryxel.cube', 'net.camotoy.bedrockskinutility.client.shaded.cubeconverter'
+    configurations = [project.configurations.shade]
+    relocate 'org.cube.converter', 'net.camotoy.bedrockskinutility.client.shaded.cubeconverter'
+}
+
+remapJar {
+    dependsOn shadowJar
+    inputFile.set(shadowJar.archiveFile)
 }
 
 processResources {
