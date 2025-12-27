@@ -1,7 +1,10 @@
 package net.camotoy.bedrockskinutility.client.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockModelPart;
+import net.fabricmc.fabric.api.renderer.v1.Renderer;
+import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.minecraft.client.model.geom.ModelPart;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -26,12 +29,16 @@ public class ModelPartMixin implements BedrockModelPart {
     @Shadow public float x;
     @Shadow public float y;
     @Shadow public float z;
+    @Shadow public float xRot;
+    @Shadow public float yRot;
+    @Shadow public float zRot;
 
     @Shadow @Final
     private Map<String, ModelPart> children;
 
     @Unique private boolean isBedrockModel;
     @Unique private boolean neededOffset;
+    @Unique private Mesh mesh;
 
     @Unique
     private Vector3f pivot = new Vector3f();
@@ -39,24 +46,43 @@ public class ModelPartMixin implements BedrockModelPart {
     @Unique
     private Vector3f rotation = new Vector3f();
 
-    @Inject(method = "translateAndRotate", at = @At("HEAD"))
+    @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V", at = @At("HEAD"), cancellable = true)
+    private void bedrockskinutility$render(PoseStack poseStack, VertexConsumer vertexConsumer, int light, int overlay, int color, CallbackInfo ci) {
+        if (this.mesh != null) {
+            // Fallback for versions without meshConsumer: manually emit quads to VertexConsumer
+            this.mesh.forEach(quad -> {
+                vertexConsumer.putBulkData(poseStack.last(), quad.toBakedQuad(null), 1.0F, 1.0F, 1.0F, 1.0F, light, overlay);
+            });
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "translateAndRotate", at = @At("HEAD"), cancellable = true)
     private void bedrockskinutility$translateAndRotateHead(PoseStack poseStack, CallbackInfo ci) {
         if (!this.isBedrockModel) {
             return;
         }
-        poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
-        poseStack.mulPose((new Quaternionf()).rotationXYZ(this.rotation.x * DEGREES_TO_RADIANS, this.rotation.y * DEGREES_TO_RADIANS, this.rotation.z * DEGREES_TO_RADIANS));
-        poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
-    }
 
-    @Inject(method = "translateAndRotate", at = @At("TAIL"))
-    private void bedrockskinutility$translateAndRotateTail(PoseStack poseStack, CallbackInfo ci) {
-        if (!this.isBedrockModel || !this.neededOffset) {
-            return;
+        if (!this.neededOffset) {
+            poseStack.translate(this.x / 16.0F, this.y / 16.0F, this.z / 16.0F);
         }
 
-        // Have to do this because of how java pivot point and bedrock pivot point system works for certain model part.
-        poseStack.translate(-this.x / 16.0F, -this.y / 16.0F, -this.z / 16.0F);
+        poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
+        poseStack.mulPose((new Quaternionf()).rotationXYZ(this.rotation.x * DEGREES_TO_RADIANS, this.rotation.y * DEGREES_TO_RADIANS, this.rotation.z * DEGREES_TO_RADIANS));
+
+        if (this.zRot != 0.0F) {
+            poseStack.mulPose((new Quaternionf()).rotationZ(this.zRot));
+        }
+        if (this.yRot != 0.0F) {
+            poseStack.mulPose((new Quaternionf()).rotationY(this.yRot));
+        }
+        if (this.xRot != 0.0F) {
+            poseStack.mulPose((new Quaternionf()).rotationX(this.xRot));
+        }
+
+        poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
+
+        ci.cancel();
     }
 
     @Inject(method = "getChild", at = @At("HEAD"), cancellable = true)
@@ -99,6 +125,11 @@ public class ModelPartMixin implements BedrockModelPart {
     }
 
     @Override
+    public void bedrockskinutility$setMesh(Mesh mesh) {
+        this.mesh = mesh;
+    }
+
+    @Override
     public boolean bedrockskinutility$isBedrockModel() {
         return this.isBedrockModel;
     }
@@ -116,5 +147,10 @@ public class ModelPartMixin implements BedrockModelPart {
     @Override
     public Vector3f bedrockskinutility$getRotation() {
         return this.rotation;
+    }
+
+    @Override
+    public Mesh bedrockskinutility$getMesh() {
+        return this.mesh;
     }
 }
