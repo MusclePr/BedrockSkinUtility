@@ -198,9 +198,4 @@ public final class BedrockMessageHandler {
             return null;
         }
     }
-
-    private static int getARGB(int index, byte[] data) {
-        return (data[index + 3] & 0xFF) << 24 | (data[index] & 0xFF) << 16 |
-                (data[index + 1] & 0xFF) << 8 | (data[index + 2] & 0xFF);
-    }
 }
