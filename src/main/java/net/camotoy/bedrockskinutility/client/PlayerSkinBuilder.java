@@ -1,24 +1,24 @@
 package net.camotoy.bedrockskinutility.client;
 
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockPlayerSkin;
-import net.minecraft.client.resources.PlayerSkin;
+import net.minecraft.core.ClientAsset;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.PlayerModelType;
+import net.minecraft.world.entity.player.PlayerSkin;
 
 public final class PlayerSkinBuilder {
-    public ResourceLocation texture;
-    public String textureUrl;
-    public ResourceLocation capeTexture;
-    public ResourceLocation elytraTexture;
-    public PlayerSkin.Model model;
+    public ClientAsset.Texture body;
+    public ClientAsset.Texture cape;
+    public ClientAsset.Texture elytra;
+    public PlayerModelType model;
     public boolean secure;
     public boolean bedrockSkin;
     public boolean bedrockCape;
 
     public PlayerSkinBuilder(final PlayerSkin base) {
-        this.texture = base.texture();
-        this.textureUrl = base.textureUrl();
-        this.capeTexture = base.capeTexture();
-        this.elytraTexture = base.elytraTexture();
+        this.body = base.body();
+        this.cape = base.cape();
+        this.elytra = base.elytra();
         this.model = base.model();
         this.secure = base.secure();
         this.bedrockSkin = ((BedrockPlayerSkin) (Object) base).bedrockskinutility$bedrockSkin();
@@ -27,15 +27,21 @@ public final class PlayerSkinBuilder {
 
     public PlayerSkin build() {
         final PlayerSkin playerSkin = new PlayerSkin(
-                texture,
-                textureUrl,
-                capeTexture,
-                elytraTexture,
+                body,
+                cape,
+                elytra,
                 model,
                 secure
         );
         ((BedrockPlayerSkin) (Object) playerSkin).bedrockskinutility$bedrockSkin(bedrockSkin);
         ((BedrockPlayerSkin) (Object) playerSkin).bedrockskinutility$bedrockCape(bedrockCape);
         return playerSkin;
+    }
+
+    public static ClientAsset.Texture textureFromResource(ResourceLocation id) {
+        // In 1.21.9, ResourceTexture can derive a different texturePath from the id
+        // (e.g. "textures/<path>.png"), which won't match dynamic TextureManager registrations.
+        // Keep both id and texturePath identical so PlayerSkin resolves the registered texture.
+        return new ClientAsset.ResourceTexture(id, id);
     }
 }

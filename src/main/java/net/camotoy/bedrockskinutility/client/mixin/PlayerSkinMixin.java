@@ -1,7 +1,7 @@
 package net.camotoy.bedrockskinutility.client.mixin;
 
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockPlayerSkin;
-import net.minecraft.client.resources.PlayerSkin;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(PlayerSkin.class)

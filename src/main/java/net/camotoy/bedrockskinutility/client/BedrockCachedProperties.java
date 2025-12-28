@@ -1,6 +1,7 @@
 package net.camotoy.bedrockskinutility.client;
 
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -8,6 +9,6 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class BedrockCachedProperties {
     public ResourceLocation cape;
-    public PlayerRenderer model;
+    public AvatarRenderer<AbstractClientPlayer> model;
     public ResourceLocation skin;
 }

@@ -3,7 +3,6 @@ package net.camotoy.bedrockskinutility.client.pluginmessage;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.camotoy.bedrockskinutility.client.*;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockPlayerInfo;
-import net.camotoy.bedrockskinutility.client.mixin.PlayerEntityRendererChangeModel;
 import net.camotoy.bedrockskinutility.client.mixin.PlayerSkinFieldAccessor;
 import net.camotoy.bedrockskinutility.client.pluginmessage.data.BaseSkinInfo;
 import net.camotoy.bedrockskinutility.client.pluginmessage.data.CapeData;
@@ -14,11 +13,12 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.client.resources.model.EquipmentAssetManager;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.PlayerModelType;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.apache.logging.log4j.Logger;
 import org.cube.converter.model.impl.bedrock.BedrockGeometryModel;
 
@@ -55,7 +55,7 @@ public final class BedrockMessageHandler {
      * Should be run from the main thread
      */
     private void applyCapeTexture(ClientPacketListener handler, UUID playerUuid, ResourceLocation identifier) {
-        PlayerInfo entry = handler.getPlayerInfo(playerUuid);
+        PlayerInfo entry = handler != null ? handler.getPlayerInfo(playerUuid) : null;
         if (entry == null) {
             // Save in the cache for later
             BedrockCachedProperties properties = skinManager.getCachedPlayers().getIfPresent(playerUuid);
@@ -66,7 +66,7 @@ public final class BedrockMessageHandler {
             properties.cape = identifier;
         } else {
             final PlayerSkinBuilder builder = new PlayerSkinBuilder(entry.getSkin());
-            builder.capeTexture = identifier;
+            builder.cape = PlayerSkinBuilder.textureFromResource(identifier);
             builder.bedrockCape = true;
             final PlayerSkin playerSkin = builder.build();
             ((PlayerSkinFieldAccessor) entry).setPlayerSkin(() -> playerSkin);
@@ -99,70 +99,65 @@ public final class BedrockMessageHandler {
         }
 
         NativeImage skinImage = toNativeImage(info.getData(), info.getWidth(), info.getHeight());
-        PlayerRenderer renderer;
+
+        if (skinImage == null) {
+            logger.error("[BSU] Failed to decode skin image for {}", payload.playerUuid());
+            return;
+        }
+
+        final BedrockPlayerEntityModel<?> bedrockModel;
         boolean setModel = info.getGeometry() != null && !info.getGeometry().isEmpty();
 
-        ResourceLocation identifier = ResourceLocation.fromNamespaceAndPath("geyserskinmanager", payload.playerUuid().toString());
+        ResourceLocation identifier = ResourceLocation.fromNamespaceAndPath("geyserskinmanager", "textures/" + payload.playerUuid() + ".png");
 
         Minecraft client = context.client();
 
         if (setModel) {
-            // Ex: skinResourcePatch={"geometry":{"default":"geometry.humanoid.custom.1742391406.1704"}}
-            String requiredGeometry = null;
+            BedrockPlayerEntityModel<?> model = null;
+
             try {
-                if (info.getGeometryName() != null) {
-                    requiredGeometry = info.getGeometryName().getAsJsonObject()
-                            .getAsJsonObject("geometry").get("default").getAsString();
-                }
-            } catch (Exception ignored) {}
-
-            BedrockPlayerEntityModel<AbstractClientPlayer> model = null;
-
-            final List<BedrockGeometryModel> geometries;
-            try {
-                geometries = BedrockGeometryModel.fromJson(info.getGeometry());
-
+                final List<BedrockGeometryModel> geometries = BedrockGeometryModel.fromJson(info.getGeometry());
                 if (!geometries.isEmpty()) {
-                    BedrockGeometryModel geometry = geometries.getFirst();
-                    if (requiredGeometry != null) {
-                        for (final BedrockGeometryModel geometryModel : geometries) {
-                            if (geometryModel.getIdentifier().equals(requiredGeometry)) {
-                                geometry = geometryModel;
-                                break;
-                            }
-                        }
-                    }
-
                     // Convert Bedrock JSON geometry into a class format that Java understands
-                    model = GeometryUtil.bedrockGeoToJava(geometry);
+                    model = GeometryUtil.bedrockGeoToJava(geometries.getFirst());
                 }
             } catch (final Exception ignored) {
             }
 
-            if (model != null) {
-                EntityRendererProvider.Context entityContext = new EntityRendererProvider.Context(client.getEntityRenderDispatcher(),
-                        client.getItemModelResolver(), client.getMapRenderer(), client.getBlockRenderer(),
-                        client.getResourceManager(), client.getEntityModels(), new EquipmentAssetManager(), client.font);
-                renderer = new BedrockPlayerRenderer(entityContext, false, identifier);
-                ((PlayerEntityRendererChangeModel) renderer).bedrockskinutility$setModel(model);
-            } else {
-                renderer = null;
-            }
+            bedrockModel = model;
         } else {
-            renderer = null;
+            bedrockModel = null;
         }
 
+        final NativeImage finalSkinImage = skinImage;
+
         client.submit(() -> {
-            client.getTextureManager().register(identifier, new DynamicTexture(() -> identifier.toString() + skinImage.hashCode(), skinImage));
-            applySkinTexture(client.getConnection(), payload.playerUuid(), identifier, renderer);
+            client.getTextureManager().register(identifier, new DynamicTexture(() -> identifier.toString() + finalSkinImage.hashCode(), finalSkinImage));
+
+            final ClientPacketListener connection = client.getConnection();
+            AvatarRenderer<AbstractClientPlayer> renderer = null;
+            if (bedrockModel != null) {
+                final PlayerInfo entry = connection != null ? connection.getPlayerInfo(payload.playerUuid()) : null;
+                final boolean slim = entry != null && entry.getSkin() != null && entry.getSkin().model() == PlayerModelType.SLIM;
+
+                EntityRendererProvider.Context entityContext = new EntityRendererProvider.Context(client.getEntityRenderDispatcher(),
+                        client.getItemModelResolver(), client.getMapRenderer(), client.getBlockRenderer(),
+                        client.getResourceManager(), client.getEntityModels(), new EquipmentAssetManager(), client.getAtlasManager(),
+                        client.font, client.playerSkinRenderCache());
+                final BedrockPlayerRenderer bedrockRenderer = new BedrockPlayerRenderer(entityContext, slim, identifier);
+                bedrockRenderer.bedrockskinutility$setModel(bedrockModel);
+                renderer = bedrockRenderer;
+            }
+
+            applySkinTexture(connection, payload.playerUuid(), identifier, renderer);
         });
     }
 
     /**
      * Should be run from the main thread
      */
-    private void applySkinTexture(ClientPacketListener handler, UUID playerUuid, ResourceLocation identifier, PlayerRenderer renderer) {
-        PlayerInfo entry = handler.getPlayerInfo(playerUuid);
+    private void applySkinTexture(ClientPacketListener handler, UUID playerUuid, ResourceLocation identifier, AvatarRenderer<AbstractClientPlayer> renderer) {
+        PlayerInfo entry = handler != null ? handler.getPlayerInfo(playerUuid) : null;
         if (entry == null) {
             // Save in the cache for later
             BedrockCachedProperties properties = skinManager.getCachedPlayers().getIfPresent(playerUuid);
@@ -177,7 +172,7 @@ public final class BedrockMessageHandler {
                 ((BedrockPlayerInfo) entry).bedrockskinutility$setModel(renderer);
 
                 final PlayerSkinBuilder builder = new PlayerSkinBuilder(entry.getSkin());
-                builder.texture = identifier;
+                builder.body = PlayerSkinBuilder.textureFromResource(identifier);
                 builder.bedrockSkin = true;
                 final PlayerSkin playerSkin = builder.build();
                 ((PlayerSkinFieldAccessor) entry).setPlayerSkin(() -> playerSkin);

@@ -9,11 +9,11 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.PlayerSkin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -42,13 +42,13 @@ public abstract class ClientPlayNetworkHandlerMixin implements ClientGamePacketL
                     final PlayerInfo playerInfo = this.playerInfoMap.get(entry.profileId());
                     final PlayerSkinBuilder builder = new PlayerSkinBuilder(playerInfo.getSkin());
                     if (properties.skin != null) {
-                        builder.texture = properties.skin;
+                        builder.body = PlayerSkinBuilder.textureFromResource(properties.skin);
                         builder.bedrockSkin = true;
                         ((BedrockPlayerInfo) playerInfo).bedrockskinutility$setModel(properties.model);
                     }
-                    if (properties.cape != null && builder.capeTexture == null) {
+                    if (properties.cape != null && builder.cape == null) {
                         // Do not overwrite existing capes
-                        builder.capeTexture = properties.cape;
+                        builder.cape = PlayerSkinBuilder.textureFromResource(properties.cape);
                         builder.bedrockCape = true;
                     }
                     final PlayerSkin playerSkin = builder.build();
@@ -68,8 +68,8 @@ public abstract class ClientPlayNetworkHandlerMixin implements ClientGamePacketL
             if (playerListEntry != null) {
                 final PlayerSkin playerSkin = playerListEntry.getSkin();
                 BedrockPlayerSkin bedrockSkin = (BedrockPlayerSkin) (Object) playerSkin;
-                ResourceLocation skinIdentifier = bedrockSkin.bedrockskinutility$bedrockSkin() ? playerSkin.texture() : null;
-                ResourceLocation capeIdentifier = bedrockSkin.bedrockskinutility$bedrockCape() ? playerSkin.capeTexture() : null;
+                ResourceLocation skinIdentifier = (bedrockSkin.bedrockskinutility$bedrockSkin() && playerSkin.body() != null) ? playerSkin.body().texturePath() : null;
+                ResourceLocation capeIdentifier = (bedrockSkin.bedrockskinutility$bedrockCape() && playerSkin.cape() != null) ? playerSkin.cape().texturePath() : null;
                 if (skinIdentifier != null || capeIdentifier != null) {
                     BedrockCachedProperties properties = new BedrockCachedProperties();
                     properties.skin = skinIdentifier;

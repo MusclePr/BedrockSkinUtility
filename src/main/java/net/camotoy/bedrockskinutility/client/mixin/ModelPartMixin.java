@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Mixin(ModelPart.class)
 public class ModelPartMixin implements BedrockModelPart {
@@ -39,8 +40,8 @@ public class ModelPartMixin implements BedrockModelPart {
     private Vector3f rotation = new Vector3f();
 
     @Inject(method = "translateAndRotate", at = @At("HEAD"))
-    public void rotateHead(PoseStack poseStack, CallbackInfo ci) {
-        if (!this.isBedrockModel || !this.neededOffset) {
+    private void bedrockskinutility$translateAndRotateHead(PoseStack poseStack, CallbackInfo ci) {
+        if (!this.isBedrockModel) {
             return;
         }
         poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
@@ -49,7 +50,7 @@ public class ModelPartMixin implements BedrockModelPart {
     }
 
     @Inject(method = "translateAndRotate", at = @At("TAIL"))
-    public void rotateTail(PoseStack poseStack, CallbackInfo ci) {
+    private void bedrockskinutility$translateAndRotateTail(PoseStack poseStack, CallbackInfo ci) {
         if (!this.isBedrockModel || !this.neededOffset) {
             return;
         }
@@ -61,7 +62,19 @@ public class ModelPartMixin implements BedrockModelPart {
     @Inject(method = "getChild", at = @At("HEAD"), cancellable = true)
     private void getChild(String name, CallbackInfoReturnable<ModelPart> cir) {
         if (this.isBedrockModel) {
-            cir.setReturnValue(this.children.getOrDefault(name, new ModelPart(List.of(), Map.of())));
+            ModelPart child = this.children.get(name);
+            if (child == null) {
+                final ModelPart placeholder = new ModelPart(List.of(), new HashMap<>());
+                ((BedrockModelPart) (Object) placeholder).bedrockskinutility$setBedrockModel();
+                try {
+                    this.children.put(name, placeholder);
+                } catch (UnsupportedOperationException ignored) {
+                    // Some parts may have immutable children maps (e.g., Map.of()).
+                    // In that case we still return the placeholder, but can't cache it.
+                }
+                child = placeholder;
+            }
+            cir.setReturnValue(child);
         }
     }
 
@@ -83,5 +96,25 @@ public class ModelPartMixin implements BedrockModelPart {
     @Override
     public void bedrockskinutility$setAngles(Vector3f vec3) {
         this.rotation = new Vector3f(vec3.x, vec3.y, vec3.z);
+    }
+
+    @Override
+    public boolean bedrockskinutility$isBedrockModel() {
+        return this.isBedrockModel;
+    }
+
+    @Override
+    public boolean bedrockskinutility$isNeededOffset() {
+        return this.neededOffset;
+    }
+
+    @Override
+    public Vector3f bedrockskinutility$getPivot() {
+        return this.pivot;
+    }
+
+    @Override
+    public Vector3f bedrockskinutility$getRotation() {
+        return this.rotation;
     }
 }

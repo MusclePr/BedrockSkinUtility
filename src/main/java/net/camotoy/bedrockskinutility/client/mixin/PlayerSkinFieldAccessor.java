@@ -1,10 +1,10 @@
 package net.camotoy.bedrockskinutility.client.mixin;
 
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.client.resources.PlayerSkin;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
+import net.minecraft.world.entity.player.PlayerSkin;
 
 import java.util.function.Supplier;
 
