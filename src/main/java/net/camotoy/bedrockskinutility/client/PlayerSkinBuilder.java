@@ -2,7 +2,7 @@ package net.camotoy.bedrockskinutility.client;
 
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockPlayerSkin;
 import net.minecraft.core.ClientAsset;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
 
@@ -38,7 +38,7 @@ public final class PlayerSkinBuilder {
         return playerSkin;
     }
 
-    public static ClientAsset.Texture textureFromResource(ResourceLocation id) {
+    public static ClientAsset.Texture textureFromResource(Identifier id) {
         // In 1.21.9, ResourceTexture can derive a different texturePath from the id
         // (e.g. "textures/<path>.png"), which won't match dynamic TextureManager registrations.
         // Keep both id and texturePath identical so PlayerSkin resolves the registered texture.

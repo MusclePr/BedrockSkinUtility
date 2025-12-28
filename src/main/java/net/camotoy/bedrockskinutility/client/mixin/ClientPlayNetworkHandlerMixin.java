@@ -12,7 +12,7 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -68,8 +68,8 @@ public abstract class ClientPlayNetworkHandlerMixin implements ClientGamePacketL
             if (playerListEntry != null) {
                 final PlayerSkin playerSkin = playerListEntry.getSkin();
                 BedrockPlayerSkin bedrockSkin = (BedrockPlayerSkin) (Object) playerSkin;
-                ResourceLocation skinIdentifier = (bedrockSkin.bedrockskinutility$bedrockSkin() && playerSkin.body() != null) ? playerSkin.body().texturePath() : null;
-                ResourceLocation capeIdentifier = (bedrockSkin.bedrockskinutility$bedrockCape() && playerSkin.cape() != null) ? playerSkin.cape().texturePath() : null;
+                Identifier skinIdentifier = (bedrockSkin.bedrockskinutility$bedrockSkin() && playerSkin.body() != null) ? playerSkin.body().texturePath() : null;
+                Identifier capeIdentifier = (bedrockSkin.bedrockskinutility$bedrockCape() && playerSkin.cape() != null) ? playerSkin.cape().texturePath() : null;
                 if (skinIdentifier != null || capeIdentifier != null) {
                     BedrockCachedProperties properties = new BedrockCachedProperties();
                     properties.skin = skinIdentifier;

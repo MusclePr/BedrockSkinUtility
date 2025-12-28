@@ -3,7 +3,6 @@ package net.camotoy.bedrockskinutility.client.mixin;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockModelPart;
-import net.fabricmc.fabric.api.renderer.v1.Renderer;
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.minecraft.client.model.geom.ModelPart;
 import org.joml.Quaternionf;
@@ -32,6 +31,8 @@ public class ModelPartMixin implements BedrockModelPart {
     @Shadow public float xRot;
     @Shadow public float yRot;
     @Shadow public float zRot;
+    @Shadow public boolean visible;
+    @Shadow private boolean skipDraw;
 
     @Shadow @Final
     private Map<String, ModelPart> children;
@@ -48,7 +49,7 @@ public class ModelPartMixin implements BedrockModelPart {
 
     @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V", at = @At("HEAD"), cancellable = true)
     private void bedrockskinutility$render(PoseStack poseStack, VertexConsumer vertexConsumer, int light, int overlay, int color, CallbackInfo ci) {
-        if (this.mesh != null) {
+        if (this.visible && !this.skipDraw && this.mesh != null) {
             // Fallback for versions without meshConsumer: manually emit quads to VertexConsumer
             this.mesh.forEach(quad -> {
                 vertexConsumer.putBulkData(poseStack.last(), quad.toBakedQuad(null), 1.0F, 1.0F, 1.0F, 1.0F, light, overlay);
@@ -83,7 +84,6 @@ public class ModelPartMixin implements BedrockModelPart {
         if (!this.neededOffset) {
             poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
         }
-
         ci.cancel();
     }
 
@@ -129,30 +129,5 @@ public class ModelPartMixin implements BedrockModelPart {
     @Override
     public void bedrockskinutility$setMesh(Mesh mesh) {
         this.mesh = mesh;
-    }
-
-    @Override
-    public boolean bedrockskinutility$isBedrockModel() {
-        return this.isBedrockModel;
-    }
-
-    @Override
-    public boolean bedrockskinutility$isNeededOffset() {
-        return this.neededOffset;
-    }
-
-    @Override
-    public Vector3f bedrockskinutility$getPivot() {
-        return this.pivot;
-    }
-
-    @Override
-    public Vector3f bedrockskinutility$getRotation() {
-        return this.rotation;
-    }
-
-    @Override
-    public Mesh bedrockskinutility$getMesh() {
-        return this.mesh;
     }
 }

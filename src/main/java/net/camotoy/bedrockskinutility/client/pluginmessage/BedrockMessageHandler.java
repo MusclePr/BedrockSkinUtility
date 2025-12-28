@@ -1,9 +1,17 @@
 package net.camotoy.bedrockskinutility.client.pluginmessage;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import net.camotoy.bedrockskinutility.client.*;
+import net.camotoy.bedrockskinutility.client.BedrockCachedProperties;
+import net.camotoy.bedrockskinutility.client.BedrockPlayerEntityModel;
+import net.camotoy.bedrockskinutility.client.BedrockPlayerRenderer;
+import net.camotoy.bedrockskinutility.client.GeometryUtil;
+import net.camotoy.bedrockskinutility.client.PlayerSkinBuilder;
+import net.camotoy.bedrockskinutility.client.SkinInfo;
+import net.camotoy.bedrockskinutility.client.SkinManager;
+import net.camotoy.bedrockskinutility.client.SkinUtils;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockPlayerInfo;
 import net.camotoy.bedrockskinutility.client.mixin.PlayerSkinFieldAccessor;
+import net.camotoy.bedrockskinutility.client.mixin.accessor.EntityRenderDispatcherAccessor;
 import net.camotoy.bedrockskinutility.client.pluginmessage.data.BaseSkinInfo;
 import net.camotoy.bedrockskinutility.client.pluginmessage.data.CapeData;
 import net.camotoy.bedrockskinutility.client.pluginmessage.data.SkinData;
@@ -14,9 +22,8 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.resources.model.EquipmentAssetManager;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
 import org.apache.logging.log4j.Logger;
@@ -43,10 +50,7 @@ public final class BedrockMessageHandler {
 
         context.client().submit(() -> {
             // As of 1.17.1, identical identifiers do not result in multiple objects of the same type being registered
-            context.client().getTextureManager().register(payload.identifier(), new DynamicTexture(() -> {
-                assert capeImage != null;
-                return payload.identifier().toString() + capeImage.hashCode();
-            }, capeImage));
+            context.client().getTextureManager().register(payload.identifier(), new DynamicTexture(() -> payload.identifier().toString() + capeImage.hashCode(), capeImage));
             applyCapeTexture(context.client().getConnection(), payload.playerUuid(), payload.identifier());
         });
     }
@@ -54,7 +58,7 @@ public final class BedrockMessageHandler {
     /**
      * Should be run from the main thread
      */
-    private void applyCapeTexture(ClientPacketListener handler, UUID playerUuid, ResourceLocation identifier) {
+    private void applyCapeTexture(ClientPacketListener handler, UUID playerUuid, Identifier identifier) {
         PlayerInfo entry = handler != null ? handler.getPlayerInfo(playerUuid) : null;
         if (entry == null) {
             // Save in the cache for later
@@ -79,7 +83,7 @@ public final class BedrockMessageHandler {
         }
 
         skinManager.getSkinInfo().put(payload.playerUuid(), new SkinInfo(payload.skinWidth(), payload.skinHeight(), payload.jsonGeometry(),
-                payload.jsonGeometryName(), payload.chunkCount()));
+                payload.chunkCount()));
     }
 
     public void handle(SkinData payload, ClientPlayNetworking.Context context) {
@@ -108,7 +112,7 @@ public final class BedrockMessageHandler {
         final BedrockPlayerEntityModel<?> bedrockModel;
         boolean setModel = info.getGeometry() != null && !info.getGeometry().isEmpty();
 
-        ResourceLocation identifier = ResourceLocation.fromNamespaceAndPath("geyserskinmanager", "textures/" + payload.playerUuid() + ".png");
+        Identifier identifier = Identifier.fromNamespaceAndPath("geyserskinmanager", "textures/" + payload.playerUuid() + ".png");
 
         Minecraft client = context.client();
 
@@ -140,10 +144,18 @@ public final class BedrockMessageHandler {
                 final PlayerInfo entry = connection != null ? connection.getPlayerInfo(payload.playerUuid()) : null;
                 final boolean slim = entry != null && entry.getSkin() != null && entry.getSkin().model() == PlayerModelType.SLIM;
 
-                EntityRendererProvider.Context entityContext = new EntityRendererProvider.Context(client.getEntityRenderDispatcher(),
-                        client.getItemModelResolver(), client.getMapRenderer(), client.getBlockRenderer(),
-                        client.getResourceManager(), client.getEntityModels(), new EquipmentAssetManager(), client.getAtlasManager(),
-                        client.font, client.playerSkinRenderCache());
+                EntityRendererProvider.Context entityContext = new EntityRendererProvider.Context(
+                        client.getEntityRenderDispatcher(),
+                        client.getItemModelResolver(),
+                        client.getMapRenderer(),
+                        client.getBlockRenderer(),
+                        client.getResourceManager(),
+                        client.getEntityModels(),
+                        ((EntityRenderDispatcherAccessor) client.getEntityRenderDispatcher()).bedrockskinutility$getEquipmentAssets(),
+                        client.getAtlasManager(),
+                        client.font,
+                        client.playerSkinRenderCache()
+                );
                 final BedrockPlayerRenderer bedrockRenderer = new BedrockPlayerRenderer(entityContext, slim, identifier);
                 bedrockRenderer.bedrockskinutility$setModel(bedrockModel);
                 renderer = bedrockRenderer;
@@ -156,7 +168,7 @@ public final class BedrockMessageHandler {
     /**
      * Should be run from the main thread
      */
-    private void applySkinTexture(ClientPacketListener handler, UUID playerUuid, ResourceLocation identifier, AvatarRenderer<AbstractClientPlayer> renderer) {
+    private void applySkinTexture(ClientPacketListener handler, UUID playerUuid, Identifier identifier, AvatarRenderer<AbstractClientPlayer> renderer) {
         PlayerInfo entry = handler != null ? handler.getPlayerInfo(playerUuid) : null;
         if (entry == null) {
             // Save in the cache for later

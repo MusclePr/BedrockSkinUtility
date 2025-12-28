@@ -8,11 +8,11 @@ import net.camotoy.bedrockskinutility.client.pluginmessage.data.SkinData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public final class GeyserSkinManagerListener {
     public static final CustomPacketPayload.Type<BedrockData> TYPE =
-            new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("bedrockskin", "data"));
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("bedrockskin", "data"));
     public static final StreamCodec<FriendlyByteBuf, BedrockData> STREAM_CODEC = StreamCodec.of(null, buf -> {
         int type = buf.readInt();
         BedrockSkinPluginMessageType[] values = BedrockSkinPluginMessageType.values();

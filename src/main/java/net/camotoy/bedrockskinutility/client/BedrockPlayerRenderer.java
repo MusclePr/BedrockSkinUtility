@@ -4,22 +4,22 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
-import net.minecraft.client.model.PlayerModel;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.model.player.PlayerModel;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockRenderState;
 
 public class BedrockPlayerRenderer extends AvatarRenderer<AbstractClientPlayer> {
-    private final ResourceLocation texture;
+    private final Identifier texture;
 
-    public BedrockPlayerRenderer(EntityRendererProvider.Context context, boolean bl, ResourceLocation texture) {
+    public BedrockPlayerRenderer(EntityRendererProvider.Context context, boolean bl, Identifier texture) {
         super(context, bl);
         this.texture = texture;
     }
 
     @Override
-    public @NotNull ResourceLocation getTextureLocation(AvatarRenderState avatarRenderState) {
+    public @NotNull Identifier getTextureLocation(AvatarRenderState avatarRenderState) {
         return this.texture;
     }
 

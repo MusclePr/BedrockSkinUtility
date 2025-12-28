@@ -9,10 +9,4 @@ public interface BedrockModelPart {
     void bedrockskinutility$setPivot(Vector3f vec3);
     void bedrockskinutility$setAngles(Vector3f vec3);
     void bedrockskinutility$setMesh(Mesh mesh);
-
-    boolean bedrockskinutility$isBedrockModel();
-    boolean bedrockskinutility$isNeededOffset();
-    Vector3f bedrockskinutility$getPivot();
-    Vector3f bedrockskinutility$getRotation();
-    Mesh bedrockskinutility$getMesh();
 }

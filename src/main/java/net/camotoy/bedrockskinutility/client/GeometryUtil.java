@@ -1,9 +1,7 @@
 package net.camotoy.bedrockskinutility.client;
 
-import com.google.common.collect.Maps;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockModelPart;
 import net.fabricmc.fabric.api.renderer.v1.Renderer;
-import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.fabricmc.fabric.api.renderer.v1.mesh.MutableMesh;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.minecraft.client.model.geom.ModelPart;
@@ -31,7 +29,7 @@ public class GeometryUtil {
 
         final Map<String, PartInfo> stringToPart = new HashMap<>();
         for (final Parent bone : geometry.getParents()) {
-            final Map<String, ModelPart> children = Maps.newHashMap();
+            final Map<String, ModelPart> children = new HashMap<>();
             final ModelPart part = new ModelPart(List.of(), children);
             // Arm
             boolean neededOffset = switch (bone.getName().toLowerCase(Locale.ROOT)) {
@@ -88,7 +86,7 @@ public class GeometryUtil {
 
         PartInfo root = stringToPart.get("root");
         if (root == null) {
-            final Map<String, ModelPart> rootParts = Maps.newHashMap();
+            final Map<String, ModelPart> rootParts = new HashMap<>();
             stringToPart.put("root", root = new PartInfo("", new ModelPart(List.of(), rootParts), rootParts));
         }
 

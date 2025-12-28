@@ -7,14 +7,12 @@ public class SkinInfo {
     private final int width;
     private final int height;
     private final JsonObject geometry;
-    private final JsonObject geometryName;
     private final byte[][] skinData;
 
-    public SkinInfo(int width, int height, JsonObject geometry, JsonObject geometryName, int chunkCount) {
+    public SkinInfo(int width, int height, JsonObject geometry, int chunkCount) {
         this.width = width;
         this.height = height;
         this.geometry = geometry;
-        this.geometryName = geometryName;
         this.skinData = new byte[chunkCount][];
     }
 
@@ -29,11 +27,6 @@ public class SkinInfo {
     @Nullable
     public JsonObject getGeometry() {
         return geometry;
-    }
-
-    @Nullable
-    public JsonObject getGeometryName() {
-        return geometryName;
     }
 
     /**

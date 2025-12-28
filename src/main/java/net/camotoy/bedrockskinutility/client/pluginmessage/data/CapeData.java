@@ -4,11 +4,11 @@ import net.camotoy.bedrockskinutility.client.pluginmessage.BedrockMessageHandler
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamDecoder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.UUID;
 
-public record CapeData(UUID playerUuid, int width, int height, ResourceLocation identifier, byte[] capeData) implements BedrockData {
+public record CapeData(UUID playerUuid, int width, int height, Identifier identifier, byte[] capeData) implements BedrockData {
     public static final StreamDecoder<FriendlyByteBuf, CapeData> STREAM_DECODER = buf -> {
         int version = buf.readInt();
         if (version != 1) {
@@ -20,7 +20,7 @@ public record CapeData(UUID playerUuid, int width, int height, ResourceLocation 
         int height = buf.readInt();
 
         String capeId = BedrockData.readString(buf);
-        ResourceLocation identifier = ResourceLocation.fromNamespaceAndPath("geyserskinmanager", capeId);
+        Identifier identifier = Identifier.fromNamespaceAndPath("geyserskinmanager", capeId);
 
         byte[] capeData = new byte[buf.readInt()];
         buf.readBytes(capeData);

@@ -10,8 +10,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-public record BaseSkinInfo(UUID playerUuid, int skinWidth, int skinHeight, String geometry, JsonObject jsonGeometry,
-                           JsonObject jsonGeometryName, int chunkCount) implements BedrockData {
+public record BaseSkinInfo(UUID playerUuid, int skinWidth, int skinHeight, JsonObject jsonGeometry,
+                           int chunkCount) implements BedrockData {
     public static final StreamDecoder<FriendlyByteBuf, @Nullable BaseSkinInfo> STREAM_DECODER = buf -> {
         int version = buf.readInt();
         if (version != 1) { // Version 2 is probably going to be reserved for persona skins
@@ -23,15 +23,13 @@ public record BaseSkinInfo(UUID playerUuid, int skinWidth, int skinHeight, Strin
         int skinWidth = buf.readInt();
         int skinHeight = buf.readInt();
 
-        String geometry = null;
         JsonObject jsonGeometry = null;
-        JsonObject jsonGeometryName = null;
 
         if (buf.readBoolean()) { // Is geometry present
             try {
-                geometry = BedrockData.readString(buf);
+                String geometry = BedrockData.readString(buf);
                 jsonGeometry = JsonParser.parseString(geometry).getAsJsonObject();
-                jsonGeometryName = JsonParser.parseString(BedrockData.readString(buf)).getAsJsonObject();
+                BedrockData.readString(buf); // geometryName - unused
             } catch (Exception e) {
                 return null; // Likely not normal geometry format so we probably won't be able to support it.
             }
@@ -39,7 +37,7 @@ public record BaseSkinInfo(UUID playerUuid, int skinWidth, int skinHeight, Strin
 
         int chunkCount = buf.readInt();
 
-        return new BaseSkinInfo(playerUuid, skinWidth, skinHeight, geometry, jsonGeometry, jsonGeometryName, chunkCount);
+        return new BaseSkinInfo(playerUuid, skinWidth, skinHeight, jsonGeometry, chunkCount);
     };
 
     @Override

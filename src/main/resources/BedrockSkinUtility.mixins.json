@@ -10,9 +10,7 @@
     "ClientPlayNetworkHandlerMixin",
     "EntityRendererDispatcherMixin",
     "ModelPartMixin",
-    "accessor.ModelPartChildrenAccessor",
-    "accessor.ModelPartCubesAccessor",
-    "PlayerEntityRendererChangeModel",
+    "accessor.EntityRenderDispatcherAccessor",
     "PlayerInfoMixin",
     "PlayerSkinFieldAccessor",
     "PlayerSkinMixin"
