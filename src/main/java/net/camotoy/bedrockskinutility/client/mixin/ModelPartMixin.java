@@ -65,9 +65,9 @@ public class ModelPartMixin implements BedrockModelPart {
 
         if (!this.neededOffset) {
             poseStack.translate(this.x / 16.0F, this.y / 16.0F, this.z / 16.0F);
+            poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
         }
 
-        poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
         poseStack.mulPose((new Quaternionf()).rotationXYZ(this.rotation.x * DEGREES_TO_RADIANS, this.rotation.y * DEGREES_TO_RADIANS, this.rotation.z * DEGREES_TO_RADIANS));
 
         if (this.zRot != 0.0F) {
@@ -80,7 +80,9 @@ public class ModelPartMixin implements BedrockModelPart {
             poseStack.mulPose((new Quaternionf()).rotationX(this.xRot));
         }
 
-        poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
+        if (!this.neededOffset) {
+            poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
+        }
 
         ci.cancel();
     }

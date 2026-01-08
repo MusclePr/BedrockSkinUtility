@@ -33,9 +33,9 @@ public class GeometryUtil {
         for (final Parent bone : geometry.getParents()) {
             final Map<String, ModelPart> children = Maps.newHashMap();
             final ModelPart part = new ModelPart(List.of(), children);
-            // Arm and leg
+            // Arm
             boolean neededOffset = switch (bone.getName().toLowerCase(Locale.ROOT)) {
-                case "rightarm", "leftarm", "rightleg", "leftleg" -> true;
+                case "rightarm", "leftarm" -> true;
                 default -> false;
             };
 
