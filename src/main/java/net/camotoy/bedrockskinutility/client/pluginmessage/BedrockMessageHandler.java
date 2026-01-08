@@ -43,10 +43,7 @@ public final class BedrockMessageHandler {
 
         context.client().submit(() -> {
             // As of 1.17.1, identical identifiers do not result in multiple objects of the same type being registered
-            context.client().getTextureManager().register(payload.identifier(), new DynamicTexture(() -> {
-                assert capeImage != null;
-                return payload.identifier().toString() + capeImage.hashCode();
-            }, capeImage));
+            context.client().getTextureManager().register(payload.identifier(), new DynamicTexture(capeImage));
             applyCapeTexture(context.client().getConnection(), payload.playerUuid(), payload.identifier());
         });
     }
@@ -153,7 +150,7 @@ public final class BedrockMessageHandler {
         }
 
         client.submit(() -> {
-            client.getTextureManager().register(identifier, new DynamicTexture(() -> identifier.toString() + skinImage.hashCode(), skinImage));
+            client.getTextureManager().register(identifier, new DynamicTexture(skinImage));
             applySkinTexture(client.getConnection(), payload.playerUuid(), identifier, renderer);
         });
     }
