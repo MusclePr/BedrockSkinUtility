@@ -18,7 +18,7 @@ public class GeometryUtil {
     private static final List<String> LEG_RELATED = List.of("leftleg", "rightleg");
     private static final List<String> PANTS_RELATED = List.of("leftpants", "rightpants");
 
-    public static BedrockPlayerEntityModel<AbstractClientPlayer> bedrockGeoToJava(BedrockGeometryModel geometry) {
+    public static BedrockPlayerEntityModel bedrockGeoToJava(BedrockGeometryModel geometry) {
         // There are some times when the skin image file is larger than the geometry UV points.
         // In this case, we need to scale UV calls
         // https://github.com/Camotoy/BedrockSkinUtility/issues/9
@@ -106,7 +106,7 @@ public class GeometryUtil {
             }
         }
 
-        return new BedrockPlayerEntityModel<>(root.part());
+        return new BedrockPlayerEntityModel(root.part());
     }
 
     private static String adjustFormatting(String name) {

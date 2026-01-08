@@ -17,7 +17,7 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.PlayerSkin;
-import net.minecraft.client.resources.model.EquipmentAssetManager;
+//import net.minecraft.client.resources.model.EquipmentAssetManager;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.Logger;
 import org.cube.converter.model.impl.bedrock.BedrockGeometryModel;
@@ -43,10 +43,7 @@ public final class BedrockMessageHandler {
 
         context.client().submit(() -> {
             // As of 1.17.1, identical identifiers do not result in multiple objects of the same type being registered
-            context.client().getTextureManager().register(payload.identifier(), new DynamicTexture(() -> {
-                assert capeImage != null;
-                return payload.identifier().toString() + capeImage.hashCode();
-            }, capeImage));
+            context.client().getTextureManager().register(payload.identifier(), new DynamicTexture(capeImage));
             applyCapeTexture(context.client().getConnection(), payload.playerUuid(), payload.identifier());
         });
     }
@@ -116,7 +113,7 @@ public final class BedrockMessageHandler {
                 }
             } catch (Exception ignored) {}
 
-            BedrockPlayerEntityModel<AbstractClientPlayer> model = null;
+            BedrockPlayerEntityModel model = null;
 
             final List<BedrockGeometryModel> geometries;
             try {
@@ -141,8 +138,8 @@ public final class BedrockMessageHandler {
 
             if (model != null) {
                 EntityRendererProvider.Context entityContext = new EntityRendererProvider.Context(client.getEntityRenderDispatcher(),
-                        client.getItemModelResolver(), client.getMapRenderer(), client.getBlockRenderer(),
-                        client.getResourceManager(), client.getEntityModels(), new EquipmentAssetManager(), client.font);
+                        client.getItemRenderer(), client.getMapRenderer(), client.getBlockRenderer(),
+                        client.getResourceManager(), client.getEntityModels(), client.getEquipmentModels(), client.font);
                 renderer = new BedrockPlayerRenderer(entityContext, false, identifier);
                 ((PlayerEntityRendererChangeModel) renderer).bedrockskinutility$setModel(model);
             } else {
@@ -153,7 +150,7 @@ public final class BedrockMessageHandler {
         }
 
         client.submit(() -> {
-            client.getTextureManager().register(identifier, new DynamicTexture(() -> identifier.toString() + skinImage.hashCode(), skinImage));
+            client.getTextureManager().register(identifier, new DynamicTexture(skinImage));
             applySkinTexture(client.getConnection(), payload.playerUuid(), identifier, renderer);
         });
     }
