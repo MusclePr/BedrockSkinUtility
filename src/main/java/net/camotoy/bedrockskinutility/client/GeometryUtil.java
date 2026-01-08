@@ -15,6 +15,8 @@ import org.joml.Vector3f;
 import java.util.*;
 
 public class GeometryUtil {
+    private static final List<String> LEG_RELATED = List.of("leftleg", "rightleg");
+    private static final List<String> PANTS_RELATED = List.of("leftpants", "rightpants");
 
     public static BedrockPlayerEntityModel<AbstractClientPlayer> bedrockGeoToJava(BedrockGeometryModel geometry) {
         // There are some times when the skin image file is larger than the geometry UV points.
@@ -37,7 +39,16 @@ public class GeometryUtil {
             ((BedrockModelPart)((Object)part)).bedrockskinutility$setNeededOffset(neededOffset);
             ((BedrockModelPart)((Object)part)).bedrockskinutility$setAngles(new Vector3f(bone.getRotation().getX() , bone.getRotation().getY(), bone.getRotation().getZ()));
 
-            ((BedrockModelPart)((Object)part)).bedrockskinutility$setPivot(new Vector3f(-bone.getPivot().getX(), -bone.getPivot().getY() + 24.016F, bone.getPivot().getZ()));
+            boolean leg = LEG_RELATED.contains(bone.getName().toLowerCase(Locale.ROOT));
+            boolean pants = PANTS_RELATED.contains(bone.getName().toLowerCase(Locale.ROOT));
+            if (leg) {
+                part.setPos(0, bone.getPivot().getY(), 0);
+                part.setInitialPose(part.storePose());
+            } else if (pants) {
+                ((BedrockModelPart)((Object)part)).bedrockskinutility$setPivot(new Vector3f(bone.getPivot().getX(), -bone.getPivot().getY(), bone.getPivot().getZ()));
+            } else {
+                ((BedrockModelPart)((Object)part)).bedrockskinutility$setPivot(new Vector3f(bone.getPivot().getX(), -bone.getPivot().getY() + 24.016F, bone.getPivot().getZ()));
+            }
 
             // Java don't allow individual cubes to have their own rotation therefore, we have to separate each cube into ModelPart to be able to rotate.
             for (final Cube cube : bone.getCubes().values()) {
@@ -56,7 +67,7 @@ public class GeometryUtil {
                 }
 
                 // Use Java-equivalent position for vertical placement to avoid legs sinking into ground
-                final float placeY = -(pos.getY() - 24.016F + sizeY);
+                final float placeY = leg || pants ? pos.getY() : -(pos.getY() - 24.016F + sizeY);
                 final ModelPart.Cube cuboid = new ModelPart.Cube(0, 0, pos.getX(), placeY, pos.getZ(), sizeX, sizeY, sizeZ, inflate, inflate, inflate, cube.isMirror(), uvWidth, uvHeight, set);
                 applyUVMap(cuboid, set, uvMap, uvWidth, uvHeight, cube.getInflate(), cube.isMirror());
 

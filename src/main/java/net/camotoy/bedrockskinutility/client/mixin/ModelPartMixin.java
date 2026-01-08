@@ -23,6 +23,7 @@ public class ModelPartMixin implements BedrockModelPart {
     private static final float DEGREES_TO_RADIANS = 0.017453292519943295f;
 
     @Shadow public float x;
+    @Shadow public float y;
     @Shadow public float z;
 
     @Shadow @Final
@@ -39,6 +40,9 @@ public class ModelPartMixin implements BedrockModelPart {
 
     @Inject(method = "translateAndRotate", at = @At("HEAD"))
     public void rotateHead(PoseStack poseStack, CallbackInfo ci) {
+        if (!this.isBedrockModel || !this.neededOffset) {
+            return;
+        }
         poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
         poseStack.mulPose((new Quaternionf()).rotationXYZ(this.rotation.x * DEGREES_TO_RADIANS, this.rotation.y * DEGREES_TO_RADIANS, this.rotation.z * DEGREES_TO_RADIANS));
         poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
@@ -51,7 +55,7 @@ public class ModelPartMixin implements BedrockModelPart {
         }
 
         // Have to do this because of how java pivot point and bedrock pivot point system works for certain model part.
-        poseStack.translate(-this.x / 16.0F, 0, -this.z / 16.0F);
+        poseStack.translate(-this.x / 16.0F, -this.y / 16.0F, -this.z / 16.0F);
     }
 
     @Inject(method = "getChild", at = @At("HEAD"), cancellable = true)
