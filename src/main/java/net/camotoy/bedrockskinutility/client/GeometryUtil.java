@@ -1,9 +1,6 @@
 package net.camotoy.bedrockskinutility.client;
 
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockModelPart;
-import net.fabricmc.fabric.api.renderer.v1.Renderer;
-import net.fabricmc.fabric.api.renderer.v1.mesh.MutableMesh;
-import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.Direction;
@@ -55,19 +52,21 @@ public class GeometryUtil {
             // Java don't allow individual cubes to have their own rotation therefore, we have to separate each cube into ModelPart to be able to rotate.
             for (final Cube cube : bone.getCubes().values()) {
                 final Position3V pos = cube.getPosition();
-                final float sizeY = cube.getSize().getY();
+                final float sizeX = cube.getSize().getX(), sizeY = cube.getSize().getY(), sizeZ = cube.getSize().getZ();
+                final float inflate = cube.getInflate();
+                final UVMap uvMap = cube.getUvMap().clone();
+                final Set<Direction> set = new HashSet<>();
+                for (final Direction direction : Direction.values()) {
+                    if (uvMap.getUvMap().containsKey(org.cube.converter.util.element.Direction.values()[direction.ordinal()])) {
+                        set.add(direction);
+                    }
+                }
 
                 // Use Java-equivalent position for vertical placement to avoid legs sinking into ground
                 final float placeY = leg || pants ? pos.getY() : -(pos.getY() - 24.016F + sizeY);
-                
-                final ModelPart cubePart = new ModelPart(List.of(), Map.of());
-                Renderer renderer = Renderer.get();
-                if (renderer != null) {
-                    MutableMesh mesh = renderer.mutableMesh();
-                    addCubeToMesh(mesh, cube, placeY, uvWidth, uvHeight);
-                    ((BedrockModelPart) (Object) cubePart).bedrockskinutility$setMesh(mesh.immutableCopy());
-                }
-
+                final ModelPart.Cube cuboid = new ModelPart.Cube(0, 0, pos.getX(), placeY, pos.getZ(), sizeX, sizeY, sizeZ, inflate, inflate, inflate, cube.isMirror(), uvWidth, uvHeight, set);
+                applyUVMap(cuboid, set, uvMap, uvWidth, uvHeight, cube.getInflate(), cube.isMirror());
+                final ModelPart cubePart = new ModelPart(List.of(cuboid), Map.of());
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setPivot(new Vector3f(cube.getPivot().getX(), -cube.getPivot().getY() + 24.016F, cube.getPivot().getZ()));
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setAngles(new Vector3f(cube.getRotation().getX(), cube.getRotation().getY(), cube.getRotation().getZ()));
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setBedrockModel();
@@ -124,83 +123,59 @@ public class GeometryUtil {
     private record PartInfo(String parent, ModelPart part, Map<String, ModelPart> children) {
     }
 
-    private static void addCubeToMesh(MutableMesh mesh, Cube cube, float placeY, float uvWidth, float uvHeight) {
-        QuadEmitter emitter = mesh.emitter();
-        float x = cube.getPosition().getX();
-        float y = placeY;
-        float z = cube.getPosition().getZ();
-        float sizeX = cube.getSize().getX();
-        float sizeY = cube.getSize().getY();
-        float sizeZ = cube.getSize().getZ();
-        float inflate = cube.getInflate();
-        boolean mirror = cube.isMirror();
+    // applyUVMap() implementation restored from pre-renderer-v1 version
+    private static void applyUVMap(final ModelPart.Cube cuboid, final Set<Direction> set, final UVMap map, final float uvWidth, final float uvHeight, final float inflate, final boolean mirror) {
+        float x = cuboid.minX, y = cuboid.minY, z = cuboid.minZ;
+        float f = cuboid.maxX, g = cuboid.maxY, h = cuboid.maxZ;
 
-        float minX = x - inflate;
-        float minY = y - inflate;
-        float minZ = z - inflate;
-        float maxX = x + sizeX + inflate;
-        float maxY = y + sizeY + inflate;
-        float maxZ = z + sizeZ + inflate;
+        x -= inflate;
+        y -= inflate;
+        z -= inflate;
+        f += inflate;
+        g += inflate;
+        h += inflate;
 
         if (!mirror) {
-            float temp = maxX;
-            maxX = minX;
-            minX = temp;
+            float i = f;
+            f = x;
+            x = i;
         }
 
-        Vector3f v1 = new Vector3f(minX, minY, minZ);
-        Vector3f v2 = new Vector3f(maxX, minY, minZ);
-        Vector3f v3 = new Vector3f(maxX, maxY, minZ);
-        Vector3f v4 = new Vector3f(minX, maxY, minZ);
-        Vector3f v5 = new Vector3f(minX, minY, maxZ);
-        Vector3f v6 = new Vector3f(maxX, minY, maxZ);
-        Vector3f v7 = new Vector3f(maxX, maxY, maxZ);
-        Vector3f v8 = new Vector3f(minX, maxY, maxZ);
+        ModelPart.Vertex vertex = new ModelPart.Vertex(x, y, z, 0.0F, 0.0F);
+        ModelPart.Vertex vertex2 = new ModelPart.Vertex(f, y, z, 0.0F, 8.0F);
+        ModelPart.Vertex vertex3 = new ModelPart.Vertex(f, g, z, 8.0F, 8.0F);
+        ModelPart.Vertex vertex4 = new ModelPart.Vertex(x, g, z, 8.0F, 0.0F);
+        ModelPart.Vertex vertex5 = new ModelPart.Vertex(x, y, h, 0.0F, 0.0F);
+        ModelPart.Vertex vertex6 = new ModelPart.Vertex(f, y, h, 0.0F, 8.0F);
+        ModelPart.Vertex vertex7 = new ModelPart.Vertex(f, g, h, 8.0F, 8.0F);
+        ModelPart.Vertex vertex8 = new ModelPart.Vertex(x, g, h, 8.0F, 0.0F);
 
-        UVMap uvMap = cube.getUvMap();
+        final ModelPart.Polygon[] sides = cuboid.polygons;
+        int s = 0;
 
-        // DOWN
-        emitQuad(emitter, Direction.DOWN, new Vector3f[]{v7, v8, v4, v3}, uvMap.getUvMap().get(org.cube.converter.util.element.Direction.DOWN), uvWidth, uvHeight, mirror);
-        // UP
-        emitQuad(emitter, Direction.UP, new Vector3f[]{v6, v2, v1, v5}, uvMap.getUvMap().get(org.cube.converter.util.element.Direction.UP), uvWidth, uvHeight, mirror);
-        // WEST
-        emitQuad(emitter, Direction.WEST, new Vector3f[]{v5, v1, v4, v8}, uvMap.getUvMap().get(org.cube.converter.util.element.Direction.WEST), uvWidth, uvHeight, mirror);
-        // NORTH
-        emitQuad(emitter, Direction.NORTH, new Vector3f[]{v1, v2, v3, v4}, uvMap.getUvMap().get(org.cube.converter.util.element.Direction.NORTH), uvWidth, uvHeight, mirror);
-        // EAST
-        emitQuad(emitter, Direction.EAST, new Vector3f[]{v2, v6, v7, v3}, uvMap.getUvMap().get(org.cube.converter.util.element.Direction.EAST), uvWidth, uvHeight, mirror);
-        // SOUTH
-        emitQuad(emitter, Direction.SOUTH, new Vector3f[]{v6, v5, v8, v7}, uvMap.getUvMap().get(org.cube.converter.util.element.Direction.SOUTH), uvWidth, uvHeight, mirror);
-    }
-
-    private static void emitQuad(QuadEmitter emitter, Direction direction, Vector3f[] vertices, Float[] uv, float uvWidth, float uvHeight, boolean mirror) {
-        if (uv == null) return;
-
-        if (mirror) {
-            Vector3f temp = vertices[0];
-            vertices[0] = vertices[3];
-            vertices[3] = temp;
-            temp = vertices[1];
-            vertices[1] = vertices[2];
-            vertices[2] = temp;
+        if (set.contains(Direction.DOWN)) {
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.DOWN);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex7, vertex8, vertex4, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.DOWN);
         }
-
-        for (int i = 0; i < 4; i++) {
-            emitter.pos(i, vertices[i].x / 16.0f, vertices[i].y / 16.0f, vertices[i].z / 16.0f);
+        if (set.contains(Direction.UP)) {
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.UP);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex2, vertex, vertex5}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.UP);
         }
-
-        float u1 = uv[0];
-        float v1 = uv[1];
-        float u2 = uv[2];
-        float v2 = uv[3];
-
-        for (int i = 0; i < 4; i++) {
-            float u = (i == 0 || i == 3) ? u2 : u1;
-            float v = (i < 2) ? v1 : v2;
-            emitter.uv(i, u / uvWidth, v / uvHeight);
+        if (set.contains(Direction.WEST)) {
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.WEST);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex, vertex4, vertex8}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.WEST);
         }
-
-        emitter.nominalFace(direction);
-        emitter.emit();
+        if (set.contains(Direction.NORTH)) {
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.NORTH);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex, vertex2, vertex3, vertex4}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.NORTH);
+        }
+        if (set.contains(Direction.EAST)) {
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.EAST);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex2, vertex6, vertex7, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.EAST);
+        }
+        if (set.contains(Direction.SOUTH)) {
+            final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.SOUTH);
+            sides[s] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex5, vertex8, vertex7}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.SOUTH);
+        }
     }
 }

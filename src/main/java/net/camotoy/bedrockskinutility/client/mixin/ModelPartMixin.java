@@ -1,9 +1,7 @@
 package net.camotoy.bedrockskinutility.client.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockModelPart;
-import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.minecraft.client.model.geom.ModelPart;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -39,7 +37,6 @@ public class ModelPartMixin implements BedrockModelPart {
 
     @Unique private boolean isBedrockModel;
     @Unique private boolean neededOffset;
-    @Unique private Mesh mesh;
 
     @Unique
     private Vector3f pivot = new Vector3f();
@@ -47,16 +44,6 @@ public class ModelPartMixin implements BedrockModelPart {
     @Unique
     private Vector3f rotation = new Vector3f();
 
-    @Inject(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V", at = @At("HEAD"), cancellable = true)
-    private void bedrockskinutility$render(PoseStack poseStack, VertexConsumer vertexConsumer, int light, int overlay, int color, CallbackInfo ci) {
-        if (this.visible && !this.skipDraw && this.mesh != null) {
-            // Fallback for versions without meshConsumer: manually emit quads to VertexConsumer
-            this.mesh.forEach(quad -> {
-                vertexConsumer.putBulkData(poseStack.last(), quad.toBakedQuad(null), 1.0F, 1.0F, 1.0F, 1.0F, light, overlay);
-            });
-            ci.cancel();
-        }
-    }
 
     @Inject(method = "translateAndRotate", at = @At("HEAD"), cancellable = true)
     private void bedrockskinutility$translateAndRotateHead(PoseStack poseStack, CallbackInfo ci) {
@@ -126,8 +113,4 @@ public class ModelPartMixin implements BedrockModelPart {
         this.rotation = new Vector3f(vec3.x, vec3.y, vec3.z);
     }
 
-    @Override
-    public void bedrockskinutility$setMesh(Mesh mesh) {
-        this.mesh = mesh;
-    }
 }
