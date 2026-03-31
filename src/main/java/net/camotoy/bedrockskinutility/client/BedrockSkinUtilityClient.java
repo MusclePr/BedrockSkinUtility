@@ -19,7 +19,7 @@ public class BedrockSkinUtilityClient implements ClientModInitializer {
         logger.info("Hello from BedrockClientSkinUtility!");
 
         var handler = new BedrockMessageHandler(logger, new SkinManager());
-        PayloadTypeRegistry.playS2C().register(GeyserSkinManagerListener.TYPE, GeyserSkinManagerListener.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(GeyserSkinManagerListener.TYPE, GeyserSkinManagerListener.STREAM_CODEC);
         ClientPlayNetworking.registerGlobalReceiver(GeyserSkinManagerListener.TYPE, (payload, context) -> payload.handle(context, handler));
     }
 }

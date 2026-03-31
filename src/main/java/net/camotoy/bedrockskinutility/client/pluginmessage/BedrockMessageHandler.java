@@ -144,14 +144,16 @@ public final class BedrockMessageHandler {
                 final PlayerInfo entry = connection != null ? connection.getPlayerInfo(payload.playerUuid()) : null;
                 final boolean slim = entry != null && entry.getSkin() != null && entry.getSkin().model() == PlayerModelType.SLIM;
 
+                final EntityRenderDispatcherAccessor dispatcherAccessor =
+                        (EntityRenderDispatcherAccessor) client.getEntityRenderDispatcher();
                 EntityRendererProvider.Context entityContext = new EntityRendererProvider.Context(
                         client.getEntityRenderDispatcher(),
+                        dispatcherAccessor.bedrockskinutility$getBlockModelResolver(),
                         client.getItemModelResolver(),
                         client.getMapRenderer(),
-                        client.getBlockRenderer(),
                         client.getResourceManager(),
                         client.getEntityModels(),
-                        ((EntityRenderDispatcherAccessor) client.getEntityRenderDispatcher()).bedrockskinutility$getEquipmentAssets(),
+                        dispatcherAccessor.bedrockskinutility$getEquipmentAssets(),
                         client.getAtlasManager(),
                         client.font,
                         client.playerSkinRenderCache()
