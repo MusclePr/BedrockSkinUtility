@@ -109,6 +109,20 @@ public final class BedrockMessageHandler {
             return;
         }
 
+        final boolean DEBUG_SKIN_SAVE = false; // Set to true to save received skin images for debugging purposes
+        if (DEBUG_SKIN_SAVE) {
+            BufferedImage bufferedImage = SkinUtils.toBufferedImage(info.getData(), info.getWidth(), info.getHeight());
+            java.nio.file.Path debugDir = java.nio.file.Paths.get("bedrock_skins");
+            try {
+                java.nio.file.Files.createDirectories(debugDir);
+                java.nio.file.Path outFile = debugDir.resolve(payload.playerUuid() + ".png");
+                javax.imageio.ImageIO.write(bufferedImage, "png", outFile.toFile());
+                logger.info("[BSU] Saved debug skin image: {}", outFile.toAbsolutePath());
+            } catch (IOException e) {
+                logger.error("[BSU] Failed to save debug skin image", e);
+            }
+        }
+
         final BedrockPlayerEntityModel<?> bedrockModel;
         boolean setModel = info.getGeometry() != null && !info.getGeometry().isEmpty();
 
