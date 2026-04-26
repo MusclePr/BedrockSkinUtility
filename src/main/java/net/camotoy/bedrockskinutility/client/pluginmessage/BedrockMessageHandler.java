@@ -9,6 +9,7 @@ import net.camotoy.bedrockskinutility.client.PlayerSkinBuilder;
 import net.camotoy.bedrockskinutility.client.SkinInfo;
 import net.camotoy.bedrockskinutility.client.SkinManager;
 import net.camotoy.bedrockskinutility.client.SkinUtils;
+import net.camotoy.bedrockskinutility.client.config.BedrockSkinUtilityConfig;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockPlayerInfo;
 import net.camotoy.bedrockskinutility.client.mixin.PlayerSkinFieldAccessor;
 import net.camotoy.bedrockskinutility.client.mixin.accessor.EntityRenderDispatcherAccessor;
@@ -39,10 +40,12 @@ import java.util.UUID;
 public final class BedrockMessageHandler {
     private final Logger logger;
     private final SkinManager skinManager;
+    private final BedrockSkinUtilityConfig config;
 
-    public BedrockMessageHandler(Logger logger, SkinManager skinManager) {
+    public BedrockMessageHandler(Logger logger, SkinManager skinManager, BedrockSkinUtilityConfig config) {
         this.logger = logger;
         this.skinManager = skinManager;
+        this.config = config;
     }
 
     public void handle(CapeData payload, ClientPlayNetworking.Context context) {
@@ -109,8 +112,7 @@ public final class BedrockMessageHandler {
             return;
         }
 
-        final boolean DEBUG_SKIN_SAVE = false; // Set to true to save received skin images for debugging purposes
-        if (DEBUG_SKIN_SAVE) {
+        if (config.isDebugSkinSave()) {
             BufferedImage bufferedImage = SkinUtils.toBufferedImage(info.getData(), info.getWidth(), info.getHeight());
             java.nio.file.Path debugDir = java.nio.file.Paths.get("bedrock_skins");
             try {

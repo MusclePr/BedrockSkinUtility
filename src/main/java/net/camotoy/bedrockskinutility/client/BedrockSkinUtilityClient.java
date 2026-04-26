@@ -1,5 +1,6 @@
 package net.camotoy.bedrockskinutility.client;
 
+import net.camotoy.bedrockskinutility.client.config.BedrockSkinUtilityConfigLoader;
 import net.camotoy.bedrockskinutility.client.pluginmessage.BedrockMessageHandler;
 import net.camotoy.bedrockskinutility.client.pluginmessage.GeyserSkinManagerListener;
 import net.fabricmc.api.ClientModInitializer;
@@ -18,7 +19,8 @@ public class BedrockSkinUtilityClient implements ClientModInitializer {
     public void onInitializeClient() {
         logger.info("Hello from BedrockClientSkinUtility!");
 
-        var handler = new BedrockMessageHandler(logger, new SkinManager());
+        var config = BedrockSkinUtilityConfigLoader.load(logger);
+        var handler = new BedrockMessageHandler(logger, new SkinManager(), config);
         PayloadTypeRegistry.clientboundPlay().register(GeyserSkinManagerListener.TYPE, GeyserSkinManagerListener.STREAM_CODEC);
         ClientPlayNetworking.registerGlobalReceiver(GeyserSkinManagerListener.TYPE, (payload, context) -> payload.handle(context, handler));
     }
