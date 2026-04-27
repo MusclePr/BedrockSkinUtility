@@ -71,7 +71,9 @@ public class GeometryUtil {
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setPivot(new Vector3f(cube.getPivot().getX(), -cube.getPivot().getY() + 24.016F, cube.getPivot().getZ()));
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setAngles(new Vector3f(cube.getRotation().getX(), cube.getRotation().getY(), cube.getRotation().getZ()));
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setBedrockModel();
-                ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setNeededOffset(neededOffset);
+                // Arm offset special-casing must stay on the arm root part only.
+                // Applying it to cube children collapses X/Z pivot movement during animations.
+                ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setNeededOffset(false);
                 children.put(cube.getParent() + cube.hashCode(), cubePart);
             }
 

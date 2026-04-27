@@ -37,6 +37,7 @@ public class ModelPartMixin implements BedrockModelPart {
 
     @Unique private boolean isBedrockModel;
     @Unique private boolean neededOffset;
+    @Unique private boolean swimOffsetEnabled;
 
     @Unique
     private Vector3f pivot = new Vector3f();
@@ -51,7 +52,8 @@ public class ModelPartMixin implements BedrockModelPart {
             return;
         }
 
-        if (!this.neededOffset) {
+        final boolean useFullOffset = !this.neededOffset || this.swimOffsetEnabled;
+        if (useFullOffset) {
             poseStack.translate(this.x / 16.0F, this.y / 16.0F, this.z / 16.0F);
             poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
         } else {
@@ -72,7 +74,7 @@ public class ModelPartMixin implements BedrockModelPart {
             poseStack.mulPose((new Quaternionf()).rotationX(this.xRot));
         }
 
-        if (!this.neededOffset) {
+        if (useFullOffset) {
             poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
         } else {
             // For arms (neededOffset=true), reverse only Y-axis pivot offset
@@ -103,6 +105,14 @@ public class ModelPartMixin implements BedrockModelPart {
     @Override
     public void bedrockskinutility$setNeededOffset(boolean needed) {
         this.neededOffset = needed;
+    }
+
+    @Override
+    public void bedrockskinutility$setSwimOffsetEnabledRecursive(boolean enabled) {
+        this.swimOffsetEnabled = enabled;
+        for (ModelPart child : this.children.values()) {
+            ((BedrockModelPart) (Object) child).bedrockskinutility$setSwimOffsetEnabledRecursive(enabled);
+        }
     }
 
     @Override

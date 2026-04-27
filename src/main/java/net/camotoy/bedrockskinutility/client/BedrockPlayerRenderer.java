@@ -6,8 +6,11 @@ import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.HumanoidArm;
 import org.jetbrains.annotations.NotNull;
 
+import net.camotoy.bedrockskinutility.client.interfaces.BedrockModelPart;
 import net.camotoy.bedrockskinutility.client.interfaces.BedrockRenderState;
 
 public class BedrockPlayerRenderer extends AvatarRenderer<AbstractClientPlayer> {
@@ -39,8 +42,22 @@ public class BedrockPlayerRenderer extends AvatarRenderer<AbstractClientPlayer> 
         // We rely on setupAnim to apply Bedrock geometry transforms and debug visibility toggles,
         // so invoke it here after the state is fully populated.
         try {
+            this.bedrockskinutility$applySwimOffsetToArms(this.bedrockskinutility$isSwimmingLike(entity));
             this.model.setupAnim(avatarRenderState);
         } catch (Throwable ignored) {
+        }
+    }
+
+    private boolean bedrockskinutility$isSwimmingLike(AbstractClientPlayer entity) {
+        return entity.isSwimming() || entity.isVisuallySwimming() || entity.getPose() == Pose.SWIMMING;
+    }
+
+    private void bedrockskinutility$applySwimOffsetToArms(boolean swimming) {
+        try {
+            ((BedrockModelPart) (Object) this.model.getArm(HumanoidArm.LEFT)).bedrockskinutility$setSwimOffsetEnabledRecursive(swimming);
+            ((BedrockModelPart) (Object) this.model.getArm(HumanoidArm.RIGHT)).bedrockskinutility$setSwimOffsetEnabledRecursive(swimming);
+        } catch (Throwable ignored) {
+            // Keep rendering resilient if a custom model misses arm parts.
         }
     }
 
