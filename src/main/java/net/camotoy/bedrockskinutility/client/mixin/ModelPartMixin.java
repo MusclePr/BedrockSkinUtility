@@ -54,6 +54,10 @@ public class ModelPartMixin implements BedrockModelPart {
         if (!this.neededOffset) {
             poseStack.translate(this.x / 16.0F, this.y / 16.0F, this.z / 16.0F);
             poseStack.translate(this.pivot.x / 16.0F, this.pivot.y / 16.0F, this.pivot.z / 16.0F);
+        } else {
+            // For arms (neededOffset=true), apply only Y-axis translation to support sneak/block holding animations
+            poseStack.translate(0, this.y / 16.0F, 0);
+            poseStack.translate(0, this.pivot.y / 16.0F, 0);
         }
 
         poseStack.mulPose((new Quaternionf()).rotationXYZ(this.rotation.x * DEGREES_TO_RADIANS, this.rotation.y * DEGREES_TO_RADIANS, this.rotation.z * DEGREES_TO_RADIANS));
@@ -70,6 +74,9 @@ public class ModelPartMixin implements BedrockModelPart {
 
         if (!this.neededOffset) {
             poseStack.translate(-this.pivot.x / 16.0F, -this.pivot.y / 16.0F, -this.pivot.z / 16.0F);
+        } else {
+            // For arms (neededOffset=true), reverse only Y-axis pivot offset
+            poseStack.translate(0, -this.pivot.y / 16.0F, 0);
         }
         ci.cancel();
     }
