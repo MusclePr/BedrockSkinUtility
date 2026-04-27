@@ -55,6 +55,7 @@ public class GeometryUtil {
                 final float sizeX = cube.getSize().getX(), sizeY = cube.getSize().getY(), sizeZ = cube.getSize().getZ();
                 final float inflate = cube.getInflate();
                 final UVMap uvMap = cube.getUvMap().clone();
+                final int[] texOrigin = estimateTexOrigin(uvMap, sizeX, sizeY, sizeZ);
                 final Set<Direction> set = new HashSet<>();
                 for (final Direction direction : Direction.values()) {
                     if (uvMap.getUvMap().containsKey(org.cube.converter.util.element.Direction.values()[direction.ordinal()])) {
@@ -64,7 +65,7 @@ public class GeometryUtil {
 
                 // Use Java-equivalent position for vertical placement to avoid legs sinking into ground
                 final float placeY = leg || pants ? pos.getY() : -(pos.getY() - 24.016F + sizeY);
-                final ModelPart.Cube cuboid = new ModelPart.Cube(0, 0, pos.getX(), placeY, pos.getZ(), sizeX, sizeY, sizeZ, inflate, inflate, inflate, cube.isMirror(), uvWidth, uvHeight, set);
+                final ModelPart.Cube cuboid = new ModelPart.Cube(texOrigin[0], texOrigin[1], pos.getX(), placeY, pos.getZ(), sizeX, sizeY, sizeZ, inflate, inflate, inflate, cube.isMirror(), uvWidth, uvHeight, set);
                 applyUVMap(cuboid, set, uvMap, uvWidth, uvHeight, cube.getInflate(), cube.isMirror());
                 final ModelPart cubePart = new ModelPart(List.of(cuboid), Map.of());
                 ((BedrockModelPart)((Object)cubePart)).bedrockskinutility$setPivot(new Vector3f(cube.getPivot().getX(), -cube.getPivot().getY() + 24.016F, cube.getPivot().getZ()));
@@ -123,6 +124,58 @@ public class GeometryUtil {
     private record PartInfo(String parent, ModelPart part, Map<String, ModelPart> children) {
     }
 
+    private static int[] estimateTexOrigin(final UVMap map, final float sizeX, final float sizeY, final float sizeZ) {
+        final int[] northOrigin = candidateFromFace(map, org.cube.converter.util.element.Direction.NORTH, -sizeZ, -sizeZ);
+        if (northOrigin != null) {
+            return northOrigin;
+        }
+
+        final int[][] fallbackOrigins = new int[][]{
+                candidateFromFace(map, org.cube.converter.util.element.Direction.SOUTH, -(sizeZ + sizeX + sizeZ), -sizeZ),
+                candidateFromFace(map, org.cube.converter.util.element.Direction.WEST, 0.0F, -sizeZ),
+                candidateFromFace(map, org.cube.converter.util.element.Direction.EAST, -(sizeZ + sizeX), -sizeZ),
+                candidateFromFace(map, org.cube.converter.util.element.Direction.DOWN, -sizeZ, 0.0F),
+                candidateFromFace(map, org.cube.converter.util.element.Direction.UP, -(sizeZ + sizeX), 0.0F)
+        };
+
+        for (final int[] origin : fallbackOrigins) {
+            if (origin != null) {
+                return origin;
+            }
+        }
+
+        return minFaceOrigin(map);
+    }
+
+    private static int[] candidateFromFace(final UVMap map, final org.cube.converter.util.element.Direction direction, final float deltaU, final float deltaV) {
+        final Float[] uv = map.getUvMap().get(direction);
+        if (uv == null || uv.length < 4) {
+            return null;
+        }
+
+        return new int[]{Math.round(uv[0] + deltaU), Math.round(uv[1] + deltaV)};
+    }
+
+    private static int[] minFaceOrigin(final UVMap map) {
+        float minU = Float.MAX_VALUE;
+        float minV = Float.MAX_VALUE;
+
+        for (final Float[] uv : map.getUvMap().values()) {
+            if (uv == null || uv.length < 2) {
+                continue;
+            }
+
+            minU = Math.min(minU, uv[0]);
+            minV = Math.min(minV, uv[1]);
+        }
+
+        if (minU == Float.MAX_VALUE || minV == Float.MAX_VALUE) {
+            return new int[]{0, 0};
+        }
+
+        return new int[]{Math.round(minU), Math.round(minV)};
+    }
+
     // applyUVMap() implementation restored from pre-renderer-v1 version
     private static void applyUVMap(final ModelPart.Cube cuboid, final Set<Direction> set, final UVMap map, final float uvWidth, final float uvHeight, final float inflate, final boolean mirror) {
         float x = cuboid.minX, y = cuboid.minY, z = cuboid.minZ;
@@ -155,27 +208,27 @@ public class GeometryUtil {
 
         if (set.contains(Direction.DOWN)) {
             final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.DOWN);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex7, vertex8, vertex4, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.DOWN);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex3, vertex4, vertex8, vertex7}, uv[0], uv[3], uv[2], uv[1], uvWidth, uvHeight, mirror, Direction.DOWN);
         }
         if (set.contains(Direction.UP)) {
             final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.UP);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex2, vertex, vertex5}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.UP);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex, vertex2, vertex6}, uv[0], uv[3], uv[2], uv[1], uvWidth, uvHeight, mirror, Direction.UP);
         }
         if (set.contains(Direction.WEST)) {
             final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.WEST);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex5, vertex, vertex4, vertex8}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.WEST);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex8, vertex4, vertex, vertex5}, uv[0], uv[3], uv[2], uv[1], uvWidth, uvHeight, mirror, Direction.WEST);
         }
         if (set.contains(Direction.NORTH)) {
             final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.NORTH);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex, vertex2, vertex3, vertex4}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.NORTH);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex4, vertex3, vertex2, vertex}, uv[0], uv[3], uv[2], uv[1], uvWidth, uvHeight, mirror, Direction.NORTH);
         }
         if (set.contains(Direction.EAST)) {
             final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.EAST);
-            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex2, vertex6, vertex7, vertex3}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.EAST);
+            sides[s++] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex3, vertex7, vertex6, vertex2}, uv[0], uv[3], uv[2], uv[1], uvWidth, uvHeight, mirror, Direction.EAST);
         }
         if (set.contains(Direction.SOUTH)) {
             final Float[] uv = map.getUvMap().get(org.cube.converter.util.element.Direction.SOUTH);
-            sides[s] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex6, vertex5, vertex8, vertex7}, uv[0], uv[1], uv[2], uv[3], uvWidth, uvHeight, mirror, Direction.SOUTH);
+            sides[s] = new ModelPart.Polygon(new ModelPart.Vertex[]{vertex7, vertex8, vertex5, vertex6}, uv[0], uv[3], uv[2], uv[1], uvWidth, uvHeight, mirror, Direction.SOUTH);
         }
     }
 }
